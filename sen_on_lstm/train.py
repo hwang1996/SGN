@@ -137,13 +137,7 @@ def train(model, train_dataloader, epoch):
             input_ids = input_ids.cuda()
             cand_ids = cand_ids.cuda()
             targets = target.cuda()
-        # import pdb; pdb.set_trace()
-        # feas = [bert_model(a.long())[0] for a in tokens]
-        # feas = torch.stack(feas)
-        # feas = torch.ones(40, 15, 10, 768).cuda()
-        # feas = feas.view(feas.size(0), feas.size(1)*feas.size(2), -1)
 
-        # fea = feas.transpose(0, 1)  #(seq_len, batch_size, feature_shape)
         hidden = repackage_hidden(hidden)
         hidd = repackage_hidden(hidd)
         hidd_cand = repackage_hidden(hidd_cand)
@@ -153,16 +147,12 @@ def train(model, train_dataloader, epoch):
         distance_1 = model.distance[0][2]
         dis_var = torch.var(distance_1)
 
-        # cand_scores = torch.matmul(output.view(args.batch_size, 1, args.emsize), cand_emb.transpose(2, 1)).squeeze(1)
         l2_loss = criterion_var(dis_var, torch.tensor(0.2).cuda())
-        # # cand_scores = cand_scores.view(-1)
         raw_loss = criterion(result_prob, targets)
 
         _, predict = result_prob.max(dim=-1)
-        # import pdb; pdb.set_trace()
         acc = float(torch.sum(predict == targets)) / float(targets.size(0))
         acc_list.append(acc)
-        # raw_loss = criterion(result_prob, targets)
 
         # loss = raw_loss
         loss = raw_loss + l2_loss
@@ -209,7 +199,6 @@ def evaluate(val_dataloader, batch_size=10):
 
     it = tqdm(range(len(val_dataloader)), desc="Eval", ncols=0)
     data_iter = iter(val_dataloader)
-    # targets = torch.tensor([0]*args.batch_size).long()
     cur_var = 0
 
     for niter in it:
@@ -219,13 +208,7 @@ def evaluate(val_dataloader, batch_size=10):
             input_ids = input_ids.cuda()
             cand_ids = cand_ids.cuda()
             targets = target.cuda()
-        # import pdb; pdb.set_trace()
-        # feas = [bert_model(a.long())[0] for a in tokens]
-        # feas = torch.stack(feas)
-        # feas = torch.ones(40, 15, 10, 768).cuda()
-        # feas = feas.view(feas.size(0), feas.size(1)*feas.size(2), -1)
 
-        # fea = feas.transpose(0, 1)  #(seq_len, batch_size, feature_shape)
         hidden = repackage_hidden(hidden)
         hidd = repackage_hidden(hidd)
         hidd_cand = repackage_hidden(hidd_cand)
@@ -234,21 +217,12 @@ def evaluate(val_dataloader, batch_size=10):
         output, result_prob, hidden, rnn_hs, dropped_rnn_hs, cand_emb = model(input_ids, cand_ids, hidden, hidd, hidd_cand)
         distance_1 = model.distance[0][2]
         dis_var = torch.var(distance_1)
-        # cand_scores = torch.matmul(output.view(args.batch_size, 1, args.emsize), cand_emb.transpose(2, 1)).squeeze(1)
         l2_loss = criterion_var(dis_var, torch.tensor(0.2).cuda())
-        # # cand_scores = cand_scores.view(-1)
         raw_loss = criterion(result_prob, targets)
 
-        # fea, targets = data_iter.next()
-        # if args.cuda:
-        #     fea = fea.cuda()
-        #     targets = targets.cuda().view(-1).long()
-        # fea = fea.transpose(0, 1)  #(seq_len, batch_size, feature_shape)
-        # output, result_prob, hidden = model(fea, hidden)
         _, predict = result_prob.max(dim=-1)
         acc = float(torch.sum(predict == targets)) / float(targets.size(0))
         acc_list.append(acc)
-        # total_loss += criterion(result_prob, targets).data
         total_loss += raw_loss.data + l2_loss.data
         cur_var += dis_var.data
         hidden = repackage_hidden(hidden)
@@ -259,32 +233,18 @@ if __name__ == '__main__':
 
     train_dataloader = get_loader(phase='train', batch_size=args.batch_size, shuffle=True, num_workers=8, drop_last=True)
     val_dataloader = get_loader(phase='val', batch_size=args.batch_size, shuffle=False, num_workers=0, drop_last=True)
-    # train_set = data_loader.RecipeDataset(phase='train')
-    # val_set = data_loader.RecipeDataset(phase='val')
-    # train_dataloader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=6, drop_last=True)
-    # val_dataloader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, num_workers=6, drop_last=True)
-
+   
     ###############################################################################
     # Build the model
     ###############################################################################
 
-    dict_file_name = os.path.join('../../Ordered-Neurons/recipe_data/', 'dict_recipe.pkl')
+    dict_file_name = os.path.join('../../../Ordered-Neurons/recipe_data/', 'dict_recipe.pkl')
     dictionary = pickle.load(open(dict_file_name, 'rb'))
     model = model.RNNModel(args.model, len(dictionary), args.emsize, args.nhid, args.chunk_size, args.nlayers,
                            args.dropout, args.dropouth, args.dropouti, args.dropoute, args.wdrop, args.tied)
-    # bert_model = DistilBertModel.from_pretrained('distilbert-base-uncased')
 
     criterion = nn.CrossEntropyLoss()
     criterion_var = nn.MSELoss()
-
-    # ###############################################################################
-    # # Model Multiprocessing
-    # num_processes = 2
-    # # NOTE: this is required for the ``fork`` method to work
-    # model.share_memory()
-    # processes = []
-    # ###############################################################################
-
 
     ###
     if args.resume:
@@ -298,8 +258,6 @@ if __name__ == '__main__':
     ###
     if args.cuda:
         model = model.cuda()
-        criterion = criterion.cuda()
-        # bert_model = bert_model.cuda()
     ###
     params = list(model.parameters()) + list(criterion.parameters())
     total_params = sum(x.size()[0] * x.size()[1] if len(x.size()) > 1 else x.size()[0] for x in params if x.size())

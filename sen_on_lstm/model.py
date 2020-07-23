@@ -83,7 +83,7 @@ class RNNModel(nn.Module):
         # self.decoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, inputs, cand_ids, hidden, hidd, hidd_cand):
-        # import pdb; pdb.set_trace()
+        ## suppose batch_size = 80
         inputs_ = inputs.view(inputs.size(0)*inputs.size(1), inputs.size(2)).transpose(0, 1)  #[80, 15, 10] -> [10, 1200]
         cand_ids_ = cand_ids.view(cand_ids.size(0)*cand_ids.size(1), cand_ids.size(2)).transpose(0, 1)   #[80, 4, 10] -> [10, 320]
 
@@ -96,9 +96,6 @@ class RNNModel(nn.Module):
         sen_emb = self.sen_out(emb_out.permute(1, 0, 2))  #[1200, 1, 400]
         sen_emb = sen_emb.view(inputs.size(0), inputs.size(1), -1).transpose(0, 1) #[80, 15, 400] -> [15, 80, 400]
 
-        # emb_out = emb_out.view(emb.size(2), emb.size(0), emb.size(1), -1)
-        # emb_out = emb_out.permute(0, 2, 3, 1)
-        # sen_emb = self.sen_out(emb_out).squeeze(-1)
         cand_emb = embedded_dropout(
             self.encoder, cand_ids_,
             dropout=self.dropoute if self.training else 0
@@ -106,11 +103,7 @@ class RNNModel(nn.Module):
         cand_emb = self.lockdrop(cand_emb, self.dropouti)   #[10, 320, 400]
         cand_emb_out, _, _, _, _ = self.word_rnn(cand_emb, hidd_cand)     #[10, 320, 400]
         cand_sen_emb = self.sen_out(cand_emb_out.permute(1, 0, 2))   #[320, 1, 400]
-        cand_sen_emb = cand_sen_emb.view(cand_ids.size(0), cand_ids.size(1), -1).transpose(0, 1)  #[4, 80, 400]
-
-        # if distance==False:
-        #     cand_emb = self.drop_out(self.embedding(cand_feas))
-        #     cand_emb = self.lockdrop(cand_emb, self.dropouti)        
+        cand_sen_emb = cand_sen_emb.view(cand_ids.size(0), cand_ids.size(1), -1).transpose(0, 1)  #[4, 80, 400]      
 
         ##1. language modeling
 
@@ -121,7 +114,7 @@ class RNNModel(nn.Module):
         # result = output.view(output.size(0)*output.size(1), output.size(2))
         # result_prob = self.decoder(result)
 
-        ##2. classification
+        ##2. quick thought
         raw_output, hidden, raw_outputs, outputs, distances = self.rnn(sen_emb, hidden)
         self.distance = distances
 
@@ -129,16 +122,7 @@ class RNNModel(nn.Module):
 
         output = output.permute(1, 0, 2)
         result = self.result(output)
-        # result = torch.mean(output, 1)
         cand_scores = torch.matmul(result, cand_sen_emb.permute(1, 2, 0)).squeeze(1)
-        # cand_scores = torch.cat((result.unsqueeze(1), cand_emb), dim=-1).squeeze(1)
-        # result_prob = F.softmax(self.prob(cand_scores), dim=-1)
-
-        ##3. quick thought
-        # raw_output, hidden, raw_outputs, outputs, distances = self.rnn(input, hidden)
-        # self.distance = distances
-
-        # output = self.lockdrop(raw_output, self.dropout)
 
         return result, cand_scores, hidden, raw_outputs, outputs, cand_emb
 
