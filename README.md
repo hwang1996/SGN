@@ -4,6 +4,10 @@
 Hao Wang, Guosheng Lin, Steven C. H. Hoi, and Chunyan Miao  
 ECCV 2020  
 
+## Requirements
+* pytorch 1.2 or higher
+* python 3.6 or higher
+
 ## Reference
 This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please consider citing:
 ```
