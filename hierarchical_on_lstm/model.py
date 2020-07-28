@@ -113,7 +113,7 @@ class RNNModel(nn.Module):
         # result = output.view(output.size(0)*output.size(1), output.size(2))
         # result_prob = self.decoder(result)
 
-        ##2. quick thought
+        ##2. classification
         raw_output, hidden, raw_outputs, outputs, distances = self.rnn(sen_emb, hidden)
         self.distance = distances
 
