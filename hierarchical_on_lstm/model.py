@@ -53,8 +53,7 @@ class RNNModel(nn.Module):
         self.embedding = nn.Linear(768, 400)
         self.drop_out = nn.Dropout(p=dropoute)
         # self.linear = nn.Linear(400, ntoken)
-
-        self.lstm = nn.LSTM(ninp, ninp)
+        
         self.sen_out = nn.Sequential(
             nn.Conv1d(10, 5, 3, stride=1, padding=1),
             nn.ReLU(),
@@ -103,7 +102,7 @@ class RNNModel(nn.Module):
         cand_emb = self.lockdrop(cand_emb, self.dropouti)   #[10, 320, 400]
         cand_emb_out, _, _, _, _ = self.word_rnn(cand_emb, hidd_cand)     #[10, 320, 400]
         cand_sen_emb = self.sen_out(cand_emb_out.permute(1, 0, 2))   #[320, 1, 400]
-        cand_sen_emb = cand_sen_emb.view(cand_ids.size(0), cand_ids.size(1), -1).transpose(0, 1)  #[4, 80, 400]      
+        cand_sen_emb = cand_sen_emb.view(cand_ids.size(0), cand_ids.size(1), -1).transpose(0, 1)  #[4, 80, 400]       
 
         ##1. language modeling
 

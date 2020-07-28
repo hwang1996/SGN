@@ -13,9 +13,9 @@ import os
 import pickle
 from tqdm import tqdm
 
-parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
-parser.add_argument('--data', type=str, default='data/penn/',
-                    help='location of the data corpus')
+parser = argparse.ArgumentParser(description='PyTorch hierarchical ON-LSTM Language Model')
+parser.add_argument('--root_dir', type=str, default='../data/',
+                    help='directory to store the data')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (LSTM, QRNN, GRU)')
 parser.add_argument('--emsize', type=int, default=400,
@@ -34,8 +34,8 @@ parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=1000,
                     help='upper epoch limit')
-# parser.add_argument('--batch_size', type=int, default=60, metavar='N',
-parser.add_argument('--batch_size', type=int, default=20, metavar='N',
+parser.add_argument('--batch_size', type=int, default=60, metavar='N',
+# parser.add_argument('--batch_size', type=int, default=20, metavar='N',
                     help='batch size')
 parser.add_argument('--bptt', type=int, default=70,
                     help='sequence length')
@@ -63,7 +63,7 @@ parser.add_argument('--cuda', action='store_false',
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
 randomhash = ''.join(str(time.time()).split('.'))
-parser.add_argument('--save', type=str, default='../ckpt_19_l2.pt',
+parser.add_argument('--save', type=str, default='../model/ckpt_.pt',
                     help='path to save the final model')
 parser.add_argument('--alpha', type=float, default=2,
                     help='alpha L2 regularization on RNN activation (alpha = 0 means no regularization)')
@@ -147,15 +147,13 @@ def train(model, train_dataloader, epoch):
         distance_1 = model.distance[0][2]
         dis_var = torch.var(distance_1)
 
-        l2_loss = criterion_var(dis_var, torch.tensor(0.2).cuda())
         raw_loss = criterion(result_prob, targets)
 
         _, predict = result_prob.max(dim=-1)
         acc = float(torch.sum(predict == targets)) / float(targets.size(0))
         acc_list.append(acc)
 
-        # loss = raw_loss
-        loss = raw_loss + l2_loss
+        loss = raw_loss
         # Activiation Regularization
         if args.alpha:
             loss = loss + sum(
@@ -217,13 +215,13 @@ def evaluate(val_dataloader, batch_size=10):
         output, result_prob, hidden, rnn_hs, dropped_rnn_hs, cand_emb = model(input_ids, cand_ids, hidden, hidd, hidd_cand)
         distance_1 = model.distance[0][2]
         dis_var = torch.var(distance_1)
-        l2_loss = criterion_var(dis_var, torch.tensor(0.2).cuda())
+
         raw_loss = criterion(result_prob, targets)
 
         _, predict = result_prob.max(dim=-1)
         acc = float(torch.sum(predict == targets)) / float(targets.size(0))
         acc_list.append(acc)
-        total_loss += raw_loss.data + l2_loss.data
+        total_loss += raw_loss.data
         cur_var += dis_var.data
         hidden = repackage_hidden(hidden)
     return total_loss / len(val_dataloader), np.mean(acc_list), cur_var/len(val_dataloader)
@@ -231,20 +229,19 @@ def evaluate(val_dataloader, batch_size=10):
 
 if __name__ == '__main__':
 
-    train_dataloader = get_loader(phase='train', batch_size=args.batch_size, shuffle=True, num_workers=8, drop_last=True)
-    val_dataloader = get_loader(phase='val', batch_size=args.batch_size, shuffle=False, num_workers=0, drop_last=True)
+    train_dataloader = get_loader(root_dir=args.root_dir, phase='train', batch_size=args.batch_size, shuffle=True, num_workers=8, drop_last=True)
+    val_dataloader = get_loader(root_dir=args.root_dir, phase='test', batch_size=args.batch_size, shuffle=False, num_workers=0, drop_last=True)
    
     ###############################################################################
     # Build the model
     ###############################################################################
 
-    dict_file_name = os.path.join('../../../Ordered-Neurons/recipe_data/', 'dict_recipe.pkl')
+    dict_file_name = os.path.join(args.root_dir, 'dict_recipe.pkl')
     dictionary = pickle.load(open(dict_file_name, 'rb'))
     model = model.RNNModel(args.model, len(dictionary), args.emsize, args.nhid, args.chunk_size, args.nlayers,
                            args.dropout, args.dropouth, args.dropouti, args.dropoute, args.wdrop, args.tied)
 
     criterion = nn.CrossEntropyLoss()
-    criterion_var = nn.MSELoss()
 
     ###
     if args.resume:
@@ -281,72 +278,72 @@ if __name__ == '__main__':
         for epoch in range(1, args.epochs + 1):
             epoch_start_time = time.time()
 
-            val_loss2, acc, dis_var = evaluate(val_dataloader, args.batch_size)
-            print(acc)
             train(model, train_dataloader, epoch)
 
-            if 't0' in optimizer.param_groups[0]:
-                tmp = {}
-                for prm in model.parameters():
-                    tmp[prm] = prm.data.clone()
-                    # prm.data = optimizer.state[prm]['ax'].clone()
+            with torch.no_grad():
 
-                val_loss2, acc, dis_var = evaluate(val_dataloader, args.batch_size)
+                if 't0' in optimizer.param_groups[0]:
+                    tmp = {}
+                    for prm in model.parameters():
+                        tmp[prm] = prm.data.clone()
+                        # prm.data = optimizer.state[prm]['ax'].clone()
 
-                print('-' * 89)
-                print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                      'valid acc {:8.4f} | var {:8.4f}'.format(
-                    epoch, (time.time() - epoch_start_time), val_loss2, acc, dis_var))
-                print('-' * 89)
+                    val_loss2, acc, dis_var = evaluate(val_dataloader, args.batch_size)
 
-                if val_loss2 < stored_loss:
-                    model_save(args.save)
-                    print('Saving Averaged!')
-                    stored_loss = val_loss2
+                    print('-' * 89)
+                    print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+                          'valid acc {:8.4f} | var {:8.4f}'.format(
+                        epoch, (time.time() - epoch_start_time), val_loss2, acc, dis_var))
+                    print('-' * 89)
 
-                for prm in model.parameters():
-                    prm.data = tmp[prm].clone()
+                    if val_loss2 < stored_loss:
+                        model_save(args.save)
+                        print('Saving Averaged!')
+                        stored_loss = val_loss2
 
-                if epoch == args.finetuning:
-                    print('Switching to finetuning')
-                    optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
-                    best_val_loss = []
+                    for prm in model.parameters():
+                        prm.data = tmp[prm].clone()
 
-                if epoch > args.finetuning and len(best_val_loss) > args.nonmono and val_loss2 > min(
-                        best_val_loss[:-args.nonmono]):
-                    print('Done!')
-                    import sys
+                    if epoch == args.finetuning:
+                        print('Switching to finetuning')
+                        optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
+                        best_val_loss = []
 
-                    sys.exit(1)
+                    if epoch > args.finetuning and len(best_val_loss) > args.nonmono and val_loss2 > min(
+                            best_val_loss[:-args.nonmono]):
+                        print('Done!')
+                        import sys
 
-            else:
-                val_loss, acc, dis_var = evaluate(val_dataloader, args.batch_size)
-                print('-' * 89)
-                print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                      'valid acc {:8.4f} | var {:8.4f}'.format(
-                    epoch, (time.time() - epoch_start_time), val_loss, acc, dis_var))
-                print('-' * 89)
+                        sys.exit(1)
 
-                if val_loss < stored_loss:
-                    model_save(args.save)
-                    print('Saving model (new best validation)')
-                    stored_loss = val_loss
+                else:
+                    val_loss, acc, dis_var = evaluate(val_dataloader, args.batch_size)
+                    print('-' * 89)
+                    print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+                          'valid acc {:8.4f} | var {:8.4f}'.format(
+                        epoch, (time.time() - epoch_start_time), val_loss, acc, dis_var))
+                    print('-' * 89)
 
-                if args.optimizer == 'adam':
-                    scheduler.step(val_loss)
+                    if val_loss < stored_loss:
+                        model_save(args.save)
+                        print('Saving model (new best validation)')
+                        stored_loss = val_loss
 
-                if args.optimizer == 'sgd' and 't0' not in optimizer.param_groups[0] and (
-                        len(best_val_loss) > args.nonmono and val_loss > min(best_val_loss[:-args.nonmono])):
-                    print('Switching to ASGD')
-                    optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
+                    if args.optimizer == 'adam':
+                        scheduler.step(val_loss)
 
-                if epoch in args.when:
-                    print('Saving model before learning rate decreased')
-                    model_save('{}.e{}'.format(args.save, epoch))
-                    print('Dividing learning rate by 10')
-                    optimizer.param_groups[0]['lr'] /= 10.
+                    if args.optimizer == 'sgd' and 't0' not in optimizer.param_groups[0] and (
+                            len(best_val_loss) > args.nonmono and val_loss > min(best_val_loss[:-args.nonmono])):
+                        print('Switching to ASGD')
+                        optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
 
-                best_val_loss.append(val_loss)
+                    if epoch in args.when:
+                        print('Saving model before learning rate decreased')
+                        model_save('{}.e{}'.format(args.save, epoch))
+                        print('Dividing learning rate by 10')
+                        optimizer.param_groups[0]['lr'] /= 10.
+
+                    best_val_loss.append(val_loss)
 
             print("PROGRESS: {}%".format((epoch / args.epochs) * 100))
 

@@ -1,5 +1,4 @@
 import pickle
-from pytorch_transformers import *
 from tqdm import tqdm
 import torch
 import numpy as np
