@@ -32,9 +32,6 @@ python train.py
 python test_phrase_grammar.py
 ```
 
-## Use the Trees to Do Recipe Generation
-Pending.
-
 
 ## Pretrained Model
 
