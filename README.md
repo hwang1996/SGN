@@ -48,6 +48,8 @@ This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-N
     archivePrefix={arXiv},
     primaryClass={cs.CV}
 }
+```
+```
 @article{shen2018ordered,
   title={Ordered neurons: Integrating tree structures into recurrent neural networks},
   author={Shen, Yikang and Tan, Shawn and Sordoni, Alessandro and Courville, Aaron},
