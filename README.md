@@ -37,13 +37,21 @@ python test_phrase_grammar.py
 
 The pretrained Model is available at [here](https://entuedu-my.sharepoint.com/:u:/g/personal/hao005_e_ntu_edu_sg/ETr0ecOhVSBLik452hW2NmsBkZw74WwlQxb_jEQ8SFC5Xw?e=6nxhFk).
 
-<!-- ## Reference
+## Reference
 This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please consider citing:
 ```
+@misc{wang2020structureaware,
+    title={Structure-Aware Generation Network for Recipe Generation from Images},
+    author={Hao Wang and Guosheng Lin and Steven C. H. Hoi and Chunyan Miao},
+    year={2020},
+    eprint={2009.00944},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
 @article{shen2018ordered,
   title={Ordered neurons: Integrating tree structures into recurrent neural networks},
   author={Shen, Yikang and Tan, Shawn and Sordoni, Alessandro and Courville, Aaron},
   journal={arXiv preprint arXiv:1810.09536},
   year={2018}
 }
-``` -->
+```
