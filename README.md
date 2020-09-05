@@ -38,7 +38,7 @@ python test_phrase_grammar.py
 The pretrained Model is available at [here](https://entuedu-my.sharepoint.com/:u:/g/personal/hao005_e_ntu_edu_sg/ETr0ecOhVSBLik452hW2NmsBkZw74WwlQxb_jEQ8SFC5Xw?e=6nxhFk).
 
 ## Reference
-This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please consider citing:
+This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please cite:
 ```
 @misc{wang2020structureaware,
     title={Structure-Aware Generation Network for Recipe Generation from Images},
