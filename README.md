@@ -40,12 +40,10 @@ The pretrained Model is available at [here](https://entuedu-my.sharepoint.com/:u
 ## Reference
 This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please cite:
 ```
-@misc{wang2020structureaware,
-    title={Structure-Aware Generation Network for Recipe Generation from Images},
-    author={Hao Wang and Guosheng Lin and Steven C. H. Hoi and Chunyan Miao},
-    year={2020},
-    eprint={2009.00944},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
+@article{wang2020structure,
+  title={Structure-Aware Generation Network for Recipe Generation from Images},
+  author={Wang, Hao and Lin, Guosheng and Hoi, Steven CH and Miao, Chunyan},
+  journal={arXiv preprint arXiv:2009.00944},
+  year={2020}
 }
 ```
