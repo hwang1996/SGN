@@ -35,7 +35,7 @@ python test_phrase_grammar.py
 
 ## Pretrained Model
 
-The pretrained Model is available at [here](https://entuedu-my.sharepoint.com/:u:/g/personal/hao005_e_ntu_edu_sg/ETr0ecOhVSBLik452hW2NmsBkZw74WwlQxb_jEQ8SFC5Xw?e=6nxhFk).
+The pretrained Model is available at [here](https://drive.google.com/file/d/1oT1dKCTznZ2xW_ZgVbCAxd5EEwtacxuF/view?usp=share_link).
 
 ## Reference
 This code is modified based on [ON-LSTM](https://github.com/yikangshen/Ordered-Neurons). If you find this repo useful, please cite:
